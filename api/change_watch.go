@@ -1,0 +1,67 @@
+package api
+
+import (
+	"context"
+	"time"
+)
+
+type Logger interface {
+	Printf(format string, v ...interface{})
+}
+
+type ChangeWatch struct {
+	StartIndex   int
+	StopIndex    int
+	StopAtEnd    bool
+	PollInterval time.Duration
+	Logger       Logger
+}
+
+var DefaultPollInterval = 60 * time.Second
+
+// Run iterates through all the changes from StartIndex to StopIndex (or forever, when StopIndex is < 0)
+// for all Change entries that are encountered the callback function is called.
+//
+// when StopIndex is -1, it will wait DefaultChangeWatchSleepTime (60 seconds) before trying again.
+//
+func (cw ChangeWatch) Run(api *Api, ctx context.Context, f func(ChangeResult)) error {
+	sleepTime := cw.PollInterval
+	if sleepTime == 0 {
+		sleepTime = DefaultPollInterval
+	}
+
+	since := cw.StartIndex
+	for {
+		if ctx.Err() != nil {
+			break
+		}
+		cw.Logger.Printf("/changes?since=%d", since)
+		changes, err := api.Changes(since, 0)
+		if err != nil {
+			return err
+		}
+		for _, cng := range changes.Changes {
+			if ctx.Err() != nil {
+				return nil
+			}
+			if cw.StopIndex > 0 && cng.Seq >= cw.StopIndex {
+				return nil
+			}
+			f(cng)
+		}
+		since = changes.Last
+
+		if changes.Done {
+			if cw.StopAtEnd {
+				return nil
+			}
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(DefaultPollInterval):
+				continue
+			}
+		}
+	}
+	return nil
+}
