@@ -9,8 +9,8 @@ after_success:
 
 deploy:
   provider: script
-  script: ghr --recreate -u levinalex v0.0.0 dist
+  script: ghr -u levinalex $TRAVIS_TAG dist
   skip_cleanup: true
   on:
-    branch: master
+    tags: true
     go: 1.7.5
