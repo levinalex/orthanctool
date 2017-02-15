@@ -11,12 +11,12 @@ import (
 )
 
 type Api struct {
-	baseURL *url.URL
+	BaseURL *url.URL
 	client  *http.Client
 }
 
 func (a *Api) url(tpl string, vars map[string]string) string {
-	return urlutil.MustResolveTemplate(a.baseURL, tpl, vars).String()
+	return urlutil.MustResolveTemplate(a.BaseURL, tpl, vars).String()
 }
 
 func (a *Api) get(pathTpl string, vars map[string]string, result interface{}) error {
@@ -48,7 +48,7 @@ func (a *Api) do(req *http.Request, result interface{}) (*http.Response, error) 
 
 func New(s string) (*Api, error) {
 	u, err := url.Parse(s)
-	return &Api{baseURL: u, client: &http.Client{
+	return &Api{BaseURL: u, client: &http.Client{
 		Timeout: 600 * time.Second,
 		Transport: &http.Transport{
 			DisableKeepAlives: true,

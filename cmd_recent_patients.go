@@ -22,7 +22,7 @@ const reverseChangeIteratorChunkSize = 1000
 
 type recentPatientsCommand struct {
 	cmdArgs             []string
-	url                 string
+	orthanc             apiFlag
 	pollFutureChanges   bool
 	pollIntervalSeconds int
 }
@@ -43,7 +43,7 @@ func (c *recentPatientsCommand) Synopsis() string {
 }
 
 func (c *recentPatientsCommand) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&c.url, "orthanc", "", "Orthanc URL")
+	f.Var(&c.orthanc, "orthanc", "Orthanc URL")
 	f.IntVar(&c.pollIntervalSeconds, "poll-interval", 60, "poll interval in seconds")
 	f.BoolVar(&c.pollFutureChanges, "poll", true, "continuously poll for changes")
 }
@@ -54,18 +54,13 @@ func (c *recentPatientsCommand) Execute(ctx context.Context, f *flag.FlagSet, _ 
 		return subcommands.ExitFailure
 	}
 
-	if c.url == "" {
-		f.Usage()
-		return subcommands.ExitUsageError
-	}
-	source, err := api.New(c.url)
-	if err != nil {
-		return fail(err)
+	if c.orthanc.Api == nil {
+		return fail(fmt.Errorf("orthanc URL not set"))
 	}
 
 	c.cmdArgs = f.Args()[0:]
 
-	err = c.run(ctx, source)
+	err := c.run(ctx, c.orthanc.Api)
 	if err != nil {
 		return fail(err)
 	}

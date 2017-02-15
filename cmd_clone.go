@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -12,40 +13,39 @@ import (
 	"github.com/levinalex/orthanctool/api"
 )
 
-type cloneCommand struct{}
+const defaultInstancePageSize = 1000
+
+type cloneCommand struct {
+	source apiFlag
+	dest   apiFlag
+}
 
 func CloneCommand() *cloneCommand { return &cloneCommand{} }
 
 func (c *cloneCommand) Name() string { return "clone" }
 func (c *cloneCommand) Usage() string {
-	return "clone --orthanc <source_url> --dest <dest_url>:\n"
+	return `clone --orthanc <source_url> --dest <dest_url>:
+	copy all instances from <source> at the orthanc installation at <dest>.` + "\n"
 }
 func (c *cloneCommand) Synopsis() string {
-	return "create a complete  of all instances in an orthanc installation"
+	return "create a complete copy of all instances in an orthanc installation"
 }
 func (c *cloneCommand) SetFlags(f *flag.FlagSet) {
+	f.Var(&c.source, "orthanc", "source Orthanc URL")
+	f.Var(&c.dest, "dest", "destination Orthanc URL")
 }
 
 func (c *cloneCommand) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	fail := func(e error) subcommands.ExitStatus {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", e.Error())
+		fmt.Fprintf(os.Stderr, "%s\n", e.Error())
 		return subcommands.ExitFailure
-
-	}
-	if f.NArg() < 2 {
-		f.Usage()
-		return subcommands.ExitUsageError
-	}
-	source, err := api.New(f.Arg(0))
-	if err != nil {
-		return fail(err)
-	}
-	dest, err := api.New(f.Arg(1))
-	if err != nil {
-		return fail(err)
 	}
 
-	err = c.run(ctx, source, dest)
+	if c.source.Api == nil || c.dest.Api == nil {
+		return fail(fmt.Errorf("source or destination URL not set"))
+	}
+
+	err := c.run(ctx, c.source.Api, c.dest.Api)
 	if err != nil {
 		return fail(err)
 	}
@@ -79,7 +79,7 @@ func processExistingInstances(ctx context.Context, wg *sync.WaitGroup, source *a
 	index := 0
 	for {
 		fmt.Fprintf(os.Stderr, "load source instances (%d)\n", index)
-		ids, err := source.Instances(index, 10000)
+		ids, err := source.Instances(index, defaultInstancePageSize)
 		if err != nil {
 			e(err)
 			return
@@ -107,7 +107,7 @@ func loadExistingInstanceIDs(ctx context.Context, wg *sync.WaitGroup, dest *api.
 			return
 		}
 		fmt.Fprintf(os.Stderr, "load destination instances (%d)\n", index)
-		in, err := dest.Instances(index, 10000)
+		in, err := dest.Instances(index, defaultInstancePageSize)
 		if err != nil {
 			e(err)
 			break
@@ -132,6 +132,7 @@ func processFutureChanges(ctx context.Context, wg *sync.WaitGroup, source *api.A
 	cw := api.ChangeWatch{
 		StartIndex:   lastIndex,
 		PollInterval: 60 * time.Second,
+		Logger:       log.New(os.Stderr, "", 0),
 	}
 	err = cw.Run(source, ctx, func(cng api.ChangeResult) {
 		if cng.ChangeType == "NewInstance" {
