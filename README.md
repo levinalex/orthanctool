@@ -48,6 +48,16 @@ recent-patients --orthanc orthanc_url [command...]:
         poll interval in seconds (default 60)
 ```
 
+Patient JSON has the following format:
+
+```json
+{
+  "ID": "91b03ffc-e3672d12-988ec655-8e8e7d16-b28d78ec",
+  "LastUpdate": "20170215T082242",
+  "Remaining": 0
+}
+```
+
 When a handler is given in the command line arguments, `recent-patients` executes that command for 
 each patient and passes JSON via stdin.  This passes every patient through `jq`, for example:
 
