@@ -4,9 +4,9 @@ go:
 before_install:
   - go get github.com/mitchellh/gox
   - go get github.com/tcnksm/ghr
-after_success:
-  - gox -osarch "linux/amd64 linux/arm" -output "dist/{{.Dir}}//{{.OS}}_{{.Arch}}"
 
+before_deploy:
+  - gox -osarch "linux/amd64 linux/arm" -output "dist/{{.Dir}}/{{.OS}}_{{.Arch}}"
 deploy:
   provider: script
   script: ghr -u levinalex $TRAVIS_TAG dist
