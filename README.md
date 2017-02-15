@@ -16,6 +16,16 @@ Subcommands:
 ### Clone
 
 ```
+$ ./orthanctool help clone           
+clone --orthanc <source_url> --dest <dest_url>:
+        copy all instances from <source> at the orthanc installation at <dest>.
+  -dest value
+        destination Orthanc URL
+  -orthanc value
+        source Orthanc URL
+```
+
+```
 $ orthanctool clone --orthanc http://A.example/ --dest http://B.example/
 ```
 
@@ -25,6 +35,7 @@ This copies all instances from A to B. It also watches A for changes and copies 
 ### Recent Patients
 
 ```
+$ orthanctool help recent-patients
 recent-patients --orthanc orthanc_url [command...]:
         Iterates over all patients stored in Orthanc roughly in most recently changed order.
         Outputs JSON with patient ID and LastUpdate timestamp.
