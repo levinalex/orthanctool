@@ -1,15 +1,17 @@
 language: go
 go:
   - 1.7.5
+
 before_install:
   - go get github.com/mitchellh/gox
-  - go get github.com/tcnksm/ghr
 
 before_deploy:
   - gox -osarch "linux/amd64 linux/arm" -output "dist/{{.Dir}}/{{.OS}}_{{.Arch}}"
+  - go get github.com/tcnksm/ghr
+
 deploy:
   provider: script
-  script: ghr -u levinalex $TRAVIS_TAG dist
+  script: "$HOME/gopath/bin/ghr -u levinalex $TRAVIS_TAG dist"
   skip_cleanup: true
   on:
     tags: true
