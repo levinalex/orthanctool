@@ -1,18 +1,15 @@
 language: go
 go:
   - 1.7.5
-
-before_install:
-  - go get github.com/mitchellh/gox
-
 before_deploy:
-  - gox -osarch "linux/amd64 linux/arm" -output "dist/{{.Dir}}/{{.OS}}_{{.Arch}}"
-  - go get github.com/tcnksm/ghr
-
+  - go get github.com/mitchellh/gox
+  - gox -osarch "linux/amd64 linux/arm" -output "dist/{{.Dir}}_{{.OS}}_{{.Arch}}"
 deploy:
-  provider: script
-  script: "$HOME/gopath/bin/ghr -u levinalex $TRAVIS_TAG dist"
-  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: ivNqy2rbUHpUR14+G0cV2C17u5YOX8wJwHFkc/QiR4ix8FVdfDvOPYUH9WSTjM6yhGClT3cYs4/d7IzTmwsC5IDWCjd8c0okI2Uvd+hV8sgqYK1ZhR8IgIupyPslZGKbweKcQdOgzGQgYuSWiAD2TCFa+xGgH4gpWcD3QFcc6nHa+95VPx+//2O2ga15ZAMA7EGejZg9Hl4DmrMLxepsucRCnBVrLhLJbWSSduMnY+3CstT9ub2S6X160emrbdc0j4k9l0+db94FWBQ8X1DzgTOuBD+HcxY42jPh2itZf6XSykgPY5Rn4X501D7JUtR4tgYnOI/IvzE5OdW/17ppm0DE8tI4WAAsWSORdD95to3zepqev/qtQxOdYsfgBTQD1jXCI7+mdfe93vLL2Got3an01sT2iFWPiYa/KSvKqiYN7Lg6UWJra9jdjhT6w+i/8vlXHKr8C6r/WSt4h20o2bTXMxFGToWxm4Gsy5IgnaVLXotC5FXarYnoXktjty0ZbBn/66mN350WoAyApo+J6AWiI0zwRBqTUjxzmhrUWv0XBMmA4V6vJdKVlyyTNstKpdVdOsyg3UufvcYAdu+Ra9Rg74uvmI7U6J1ngZIKlQr+3TscO+7GeMYQpgMgpUIJ/ZyyXz/5BQBC/lsTavJSrSFsiV98YNc7e7m/Y92WE1A=
+  file: dist/*
+  file_glob: true
   on:
     tags: true
     go: 1.7.5
