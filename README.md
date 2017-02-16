@@ -2,6 +2,9 @@
 
 Command line utility to interact with the [Orthanc](http://www.orthanc-server.com) DICOM server.
 
+[![Build Status](https://travis-ci.org/levinalex/orthanctool.svg?branch=master)](https://travis-ci.org/levinalex/orthanctool)
+[![GoDoc](https://godoc.org/github.com/levinalex/orthanctool/api?status.svg)](https://godoc.org/github.com/levinalex/orthanctool/api)
+
 ## Usage
 
 ```
