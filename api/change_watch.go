@@ -14,7 +14,6 @@ type ChangeWatch struct {
 	StopIndex    int
 	StopAtEnd    bool
 	PollInterval time.Duration
-	Logger       Logger
 }
 
 var DefaultPollInterval = 60 * time.Second
@@ -35,7 +34,6 @@ func (cw ChangeWatch) Run(api *Api, ctx context.Context, f func(ChangeResult)) e
 		if ctx.Err() != nil {
 			break
 		}
-		cw.Logger.Printf("/changes?since=%d", since)
 		changes, err := api.Changes(since, 0)
 		if err != nil {
 			return err

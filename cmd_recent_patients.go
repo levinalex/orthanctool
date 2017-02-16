@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"sync"
@@ -72,11 +71,8 @@ func (c *recentPatientsCommand) Execute(ctx context.Context, f *flag.FlagSet, _ 
 func patientDetails(done <-chan struct{}, wg *sync.WaitGroup, source *api.Api, patients chan<- patientheap.Patient, e ErrorFunc) {
 	defer wg.Done()
 
-	logger := log.New(os.Stderr, "patient-detail ", 0)
-
 	index := 0
 	for {
-		logger.Printf("/patients?since=%d", index)
 		details, err := source.PatientDetailsSince(index, patientDetailPageSize)
 		if err != nil {
 			e(err)
@@ -99,7 +95,6 @@ func patientDetails(done <-chan struct{}, wg *sync.WaitGroup, source *api.Api, p
 func watchForChanges(ctx context.Context, startIndex, stopIndex int, source *api.Api, patients chan<- patientheap.Patient, pollInterval time.Duration, e ErrorFunc) {
 	err := api.ChangeWatch{
 		StartIndex: startIndex, StopIndex: stopIndex,
-		Logger:       log.New(os.Stderr, "", 0),
 		PollInterval: pollInterval,
 	}.
 		Run(source, ctx, func(cng api.ChangeResult) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 	"time"
@@ -132,7 +131,6 @@ func processFutureChanges(ctx context.Context, wg *sync.WaitGroup, source *api.A
 	cw := api.ChangeWatch{
 		StartIndex:   lastIndex,
 		PollInterval: 60 * time.Second,
-		Logger:       log.New(os.Stderr, "", 0),
 	}
 	err = cw.Run(source, ctx, func(cng api.ChangeResult) {
 		if cng.ChangeType == "NewInstance" {
