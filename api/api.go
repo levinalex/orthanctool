@@ -1,3 +1,4 @@
+// Package api is a partial API client for the Orthanc DICOM server REST API.
 package api
 
 import (
@@ -46,8 +47,9 @@ func (a *Api) do(req *http.Request, result interface{}) (*http.Response, error) 
 	return resp, nil
 }
 
-func New(s string) (*Api, error) {
-	u, err := url.Parse(s)
+// New returns a new API Client with default settings.
+func New(baseURL string) (*Api, error) {
+	u, err := url.Parse(baseURL)
 	return &Api{BaseURL: u, client: &http.Client{
 		Timeout: 600 * time.Second,
 		Transport: &http.Transport{
