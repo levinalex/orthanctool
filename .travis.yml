@@ -1,6 +1,7 @@
 language: go
 go:
   - 1.7.5
+  - 1.8.x
 before_deploy:
   - go get github.com/mitchellh/gox
   - gox -osarch "linux/amd64 linux/arm" -output "dist/{{.Dir}}_{{.OS}}_{{.Arch}}"
