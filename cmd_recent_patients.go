@@ -48,11 +48,6 @@ func (c *recentPatientsCommand) SetFlags(f *flag.FlagSet) {
 }
 
 func (c *recentPatientsCommand) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	fail := func(e error) subcommands.ExitStatus {
-		fmt.Fprintln(os.Stderr, e.Error())
-		return subcommands.ExitFailure
-	}
-
 	if c.orthanc.Api == nil {
 		return fail(fmt.Errorf("orthanc URL not set"))
 	}

@@ -35,11 +35,6 @@ func (c *cloneCommand) SetFlags(f *flag.FlagSet) {
 }
 
 func (c *cloneCommand) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	fail := func(e error) subcommands.ExitStatus {
-		fmt.Fprintf(os.Stderr, "%s\n", e.Error())
-		return subcommands.ExitFailure
-	}
-
 	if c.source.Api == nil || c.dest.Api == nil {
 		return fail(fmt.Errorf("source or destination URL not set"))
 	}

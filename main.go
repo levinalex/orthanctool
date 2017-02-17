@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/google/subcommands"
@@ -38,4 +39,9 @@ func (a apiFlag) String() string {
 	} else {
 		return ""
 	}
+}
+
+func fail(e error) subcommands.ExitStatus {
+	fmt.Fprintf(os.Stderr, "%s\n", e.Error())
+	return subcommands.ExitFailure
 }
