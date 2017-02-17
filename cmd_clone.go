@@ -15,8 +15,9 @@ import (
 const defaultInstancePageSize = 1000
 
 type cloneCommand struct {
-	source apiFlag
-	dest   apiFlag
+	source              apiFlag
+	dest                apiFlag
+	pollIntervalSeconds int
 }
 
 func CloneCommand() *cloneCommand { return &cloneCommand{} }
@@ -32,6 +33,7 @@ func (c *cloneCommand) Synopsis() string {
 func (c *cloneCommand) SetFlags(f *flag.FlagSet) {
 	f.Var(&c.source, "orthanc", "source Orthanc URL")
 	f.Var(&c.dest, "dest", "destination Orthanc URL")
+	f.IntVar(&c.pollIntervalSeconds, "poll-interval", 60, "poll interval in seconds")
 }
 
 func (c *cloneCommand) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -115,7 +117,7 @@ func loadExistingInstanceIDs(ctx context.Context, wg *sync.WaitGroup, dest *api.
 	}
 }
 
-func processFutureChanges(ctx context.Context, wg *sync.WaitGroup, source *api.Api, instances chan<- string, e ErrorFunc) {
+func processFutureChanges(ctx context.Context, wg *sync.WaitGroup, source *api.Api, instances chan<- string, pollInterval time.Duration, e ErrorFunc) {
 	defer wg.Done()
 
 	_, lastIndex, err := source.LastChange()
@@ -125,7 +127,7 @@ func processFutureChanges(ctx context.Context, wg *sync.WaitGroup, source *api.A
 	}
 	cw := api.ChangeWatch{
 		StartIndex:   lastIndex,
-		PollInterval: 60 * time.Second,
+		PollInterval: pollInterval,
 	}
 	err = cw.Run(source, ctx, func(cng api.ChangeResult) {
 		if cng.ChangeType == "NewInstance" {
@@ -180,7 +182,7 @@ func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 	}
 
 	wg.Add(1)
-	go processFutureChanges(ctx, &wg, source, instancesToCopy, e)
+	go processFutureChanges(ctx, &wg, source, instancesToCopy, time.Duration(c.pollIntervalSeconds)*time.Second, e)
 
 	wg.Add(2)
 	go func() {
