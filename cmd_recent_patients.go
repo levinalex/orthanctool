@@ -32,7 +32,7 @@ func RecentPatientsCommand() *recentPatientsCommand {
 
 func (c *recentPatientsCommand) Name() string { return "recent-patients" }
 func (c *recentPatientsCommand) Usage() string {
-	return c.Name() + ` --orthanc orthanc_url [command...]:
+	return c.Name() + ` --orthanc <url> [command...]:
 	Iterates over all patients stored in Orthanc roughly in most recently changed order.
 	Outputs JSON with patient ID and LastUpdate timestamp.
 	If <command> is given, it will be run for each patient and JSON will be passed to it via stdin.` + "\n"
