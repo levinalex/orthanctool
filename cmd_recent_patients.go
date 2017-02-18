@@ -63,18 +63,15 @@ func (c *recentPatientsCommand) Execute(ctx context.Context, f *flag.FlagSet, _ 
 }
 
 // patientDetails iterates over all existing patients.
-func patientDetails(ctx context.Context, wg *sync.WaitGroup, source *api.Api, patients chan<- patientheap.Patient, e ErrorFunc) {
-	defer wg.Done()
-
+func patientDetails(ctx context.Context, source *api.Api, patients chan<- patientheap.Patient) error {
 	index := 0
 	for {
 		details, err := source.PatientDetailsSince(ctx, index, patientDetailPageSize)
 		if err != nil {
-			e(err)
-			return
+			return err
 		}
 		if len(details) == 0 {
-			return
+			return nil
 		}
 		index += len(details)
 
@@ -82,13 +79,13 @@ func patientDetails(ctx context.Context, wg *sync.WaitGroup, source *api.Api, pa
 			select {
 			case patients <- patientheap.Patient{ID: d.ID, LastUpdate: d.LastUpdate}:
 			case <-ctx.Done():
-				return
+				return ctx.Err()
 			}
 		}
 	}
 }
-func watchForChanges(ctx context.Context, startIndex, stopIndex int, source *api.Api, patients chan<- patientheap.Patient, pollInterval time.Duration, e ErrorFunc) {
-	err := api.ChangeWatch{
+func watchForChanges(ctx context.Context, startIndex, stopIndex int, source *api.Api, patients chan<- patientheap.Patient, pollInterval time.Duration) error {
+	return api.ChangeWatch{
 		StartIndex: startIndex, StopIndex: stopIndex,
 		PollInterval: pollInterval,
 	}.
@@ -97,10 +94,6 @@ func watchForChanges(ctx context.Context, startIndex, stopIndex int, source *api
 				patients <- patientheap.Patient{ID: cng.ID, LastUpdate: cng.Date}
 			}
 		})
-
-	if err != nil {
-		e(err)
-	}
 }
 
 func (c *recentPatientsCommand) cmdAction(pat patientheap.PatientOutput) error {
@@ -126,19 +119,18 @@ func (c *recentPatientsCommand) cmdAction(pat patientheap.PatientOutput) error {
 }
 
 func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error {
-	var err error
 	wg, wg2 := sync.WaitGroup{}, sync.WaitGroup{}
-	ctx, cancelFunc := context.WithCancel(ctx)
-	e := func(e error) {
-		cancelFunc()
-		err = e
-	}
-
+	ctx, cancel := context.WithCancel(ctx)
+	errors := make(chan error, 0)
 	patients := make(chan patientheap.Patient, 0)
 	sortedPatients := patientheap.SortPatients(ctx.Done(), patients)
+	returnError := readFirstError(errors, func() { cancel() })
 
 	wg.Add(1)
-	go patientDetails(ctx, &wg, source, patients, e)
+	go func() {
+		defer wg.Done()
+		errors <- patientDetails(ctx, source, patients)
+	}()
 
 	wg.Add(1)
 	go func() {
@@ -146,7 +138,7 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 
 		_, lastIndex, err := source.LastChange(ctx)
 		if err != nil {
-			e(err)
+			errors <- err
 			return
 		}
 
@@ -154,15 +146,15 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				watchForChanges(ctx, lastIndex, -1, source, patients,
-					time.Duration(c.pollIntervalSeconds)*time.Second, e)
+				pollInterval := time.Duration(c.pollIntervalSeconds) * time.Second
+				errors <- watchForChanges(ctx, lastIndex, -1, source, patients, pollInterval)
 			}()
 		}
 
 		to := lastIndex
 		for to > 0 {
 			from := to - reverseChangeIteratorChunkSize
-			watchForChanges(ctx, from, to, source, patients, 0, e) // all past changes up to now
+			errors <- watchForChanges(ctx, from, to, source, patients, 0) // all past changes up to now
 			to = from
 		}
 	}()
@@ -172,11 +164,7 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 		defer wg2.Done()
 
 		for pat := range sortedPatients {
-			err := c.cmdAction(pat)
-			if err != nil {
-				e(err)
-				break
-			}
+			errors <- c.cmdAction(pat)
 		}
 	}()
 
@@ -185,6 +173,7 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 	close(patients)
 
 	wg2.Wait()
+	close(errors)
 
-	return err
+	return <-returnError
 }
