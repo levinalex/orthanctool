@@ -23,7 +23,7 @@ var DefaultPollInterval = 60 * time.Second
 //
 // when StopIndex is -1, it will wait DefaultChangeWatchSleepTime (60 seconds) before trying again.
 //
-func (cw ChangeWatch) Run(api *Api, ctx context.Context, f func(ChangeResult)) error {
+func (cw ChangeWatch) Run(ctx context.Context, api *Api, f func(ChangeResult)) error {
 	sleepTime := cw.PollInterval
 	if sleepTime == 0 {
 		sleepTime = DefaultPollInterval
@@ -34,7 +34,7 @@ func (cw ChangeWatch) Run(api *Api, ctx context.Context, f func(ChangeResult)) e
 		if ctx.Err() != nil {
 			break
 		}
-		changes, err := api.Changes(since, 0)
+		changes, err := api.Changes(ctx, since, 0)
 		if err != nil {
 			return err
 		}

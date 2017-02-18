@@ -1,28 +1,29 @@
 package api
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strconv"
 )
 
-func (a *Api) Instances(since int, limit int) (result []string, err error) {
+func (a *Api) Instances(ctx context.Context, since int, limit int) (result []string, err error) {
 	vars := map[string]string{}
 	if since > 0 || limit > 0 {
 		vars["since"] = strconv.Itoa(since)
 		vars["limit"] = strconv.Itoa(limit)
 	}
-	err = a.get("instances{?since,limit}", vars, &result)
+	err = a.get(ctx, "instances{?since,limit}", vars, &result)
 
 	return result, err
 }
 
-func (a *Api) InstanceFile(id string) (r io.ReadCloser, len int64, err error) {
+func (a *Api) InstanceFile(ctx context.Context, id string) (r io.ReadCloser, len int64, err error) {
 	req, err := http.NewRequest("GET", a.url("instances/{id}/file", map[string]string{"id": id}), nil)
 	if err != nil {
 		return nil, 0, err
 	}
-	resp, err := a.do(req, nil)
+	resp, err := a.do(ctx, req, nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -35,7 +36,7 @@ type PostInstanceResponse struct {
 	Status string `json:"Status"`
 }
 
-func (a *Api) PostInstance(data io.Reader, len int64) (result PostInstanceResponse, err error) {
+func (a *Api) PostInstance(ctx context.Context, data io.Reader, len int64) (result PostInstanceResponse, err error) {
 	url := a.url("instances", nil)
 
 	req, err := http.NewRequest("POST", url, data)
@@ -44,6 +45,6 @@ func (a *Api) PostInstance(data io.Reader, len int64) (result PostInstanceRespon
 	}
 	req.ContentLength = len
 
-	_, err = a.do(req, &result)
+	_, err = a.do(ctx, req, &result)
 	return result, err
 }

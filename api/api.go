@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,17 +21,19 @@ func (a *Api) url(tpl string, vars map[string]string) string {
 	return urlutil.MustResolveTemplate(a.BaseURL, tpl, vars).String()
 }
 
-func (a *Api) get(pathTpl string, vars map[string]string, result interface{}) error {
+func (a *Api) get(ctx context.Context, pathTpl string, vars map[string]string, result interface{}) error {
 	req, err := http.NewRequest("GET", a.url(pathTpl, vars), nil)
 	if err != nil {
 		return err
 	}
-	_, err = a.do(req, result)
+	_, err = a.do(ctx, req, result)
 	return err
 }
 
-func (a *Api) do(req *http.Request, result interface{}) (*http.Response, error) {
+func (a *Api) do(ctx context.Context, req *http.Request, result interface{}) (*http.Response, error) {
+	req = req.WithContext(ctx)
 	resp, err := a.client.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
