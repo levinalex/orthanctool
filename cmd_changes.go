@@ -28,7 +28,7 @@ func (c changesCommand) Usage() string {
 	return c.Name() + ` --orthanc <url> [--all] [--poll] [command...]:
 	Iterates over changes in Orthanc.
 	Outputs each change as JSON. 
-	If command is given, it will be run for each change and JSON will be passed to it via stdin.` + "\n"
+	If command is given, it will be run for each change and JSON will be passed to it via stdin.` + "\n\n"
 }
 func (c changesCommand) Synopsis() string { return "yield change entries" }
 

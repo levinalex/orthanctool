@@ -25,7 +25,7 @@ func CloneCommand() *cloneCommand { return &cloneCommand{} }
 func (c *cloneCommand) Name() string { return "clone" }
 func (c *cloneCommand) Usage() string {
 	return `clone --orthanc <source_url> --dest <dest_url>:
-	copy all instances from <source> at the orthanc installation at <dest>.` + "\n"
+	copy all instances from <source> at the orthanc installation at <dest>.` + "\n\n"
 }
 func (c *cloneCommand) Synopsis() string {
 	return "create a complete copy of all instances in an orthanc installation"
