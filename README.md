@@ -19,13 +19,16 @@ Subcommands:
 ### Clone
 
 ```
-$ ./orthanctool help clone           
+$ ./orthanctool help clone
 clone --orthanc <source_url> --dest <dest_url>:
-        copy all instances from <source> at the orthanc installation at <dest>.
+	copy all instances from <source> at the orthanc installation at <dest>.
+
   -dest value
-        destination Orthanc URL
+    	destination Orthanc URL
   -orthanc value
-        source Orthanc URL
+    	source Orthanc URL
+  -poll-interval int
+    	poll interval in seconds (default 60)
 ```
 
 ```
@@ -39,16 +42,17 @@ This copies all instances from A to B. It also watches A for changes and copies 
 
 ```
 $ orthanctool help recent-patients
-recent-patients --orthanc orthanc_url [command...]:
-        Iterates over all patients stored in Orthanc roughly in most recently changed order.
-        Outputs JSON with patient ID and LastUpdate timestamp.
-        If <command> is given, it will be run for each patient and JSON will be passed to it via stdin.
+recent-patients --orthanc <url> [command...]:
+	Iterates over all patients stored in Orthanc roughly in most recently changed order.
+	Outputs JSON with patient ID and LastUpdate timestamp.
+	If <command> is given, it will be run for each patient and JSON will be passed to it via stdin.
+
   -orthanc value
-        Orthanc URL
+    	Orthanc URL
   -poll
-        continuously poll for changes (default true)
+    	continuously poll for changes (default true)
   -poll-interval int
-        poll interval in seconds (default 60)
+    	poll interval in seconds (default 60)
 ```
 
 Patient JSON has the following format:
@@ -61,7 +65,7 @@ Patient JSON has the following format:
 }
 ```
 
-When a handler is given in the command line arguments, `recent-patients` executes that command for 
+When a handler is given in the command line arguments, `recent-patients` executes that command for
 each patient and passes JSON via stdin.  This passes every patient through `jq`, for example:
 
 ```
@@ -69,5 +73,26 @@ $ orthanctool recent-patients --orthanc http://A.example/ jq -c '.ID' | head -n 
 "ba5e828d-8d3a73da-40eead54-a5b26022-38f56659"
 ```
 
-When `--poll` is true (default) then `recent-patients` will watch for changes and yield new 
+When `--poll` is true (default) then `recent-patients` will watch for changes and yield new
 patients as soon as they are stable.
+
+### Changes
+
+```
+$ ./orthanctool help changes
+changes --orthanc <url> [--all] [--poll] [command...]:
+	Iterates over changes in Orthanc.
+	Outputs each change as JSON.
+	If command is given, it will be run for each change and JSON will be passed to it via stdin.
+
+  -all
+    	yield past changes (default true)
+  -filter string
+    	only output changes of this type
+  -orthanc value
+    	Orthanc URL
+  -poll
+    	continuously poll for changes (default true)
+  -poll-interval int
+    	poll interval in seconds (default 60)
+```
