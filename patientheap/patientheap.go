@@ -59,6 +59,9 @@ func SortPatients(done <-chan struct{}, patients <-chan Patient) <-chan PatientO
 			case patient, ok := <-patients:
 				if !ok {
 					patients = nil
+					if output == nil {
+						return
+					}
 				} else {
 					heap.Push(&h, patient)
 					output = sorted
