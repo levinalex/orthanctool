@@ -119,7 +119,7 @@ func (c *recentPatientsCommand) cmdAction(pat patientheap.PatientOutput) error {
 }
 
 func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error {
-	wg, wg2 := sync.WaitGroup{}, sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(ctx)
 	errors := make(chan error, 0)
 	patients := make(chan patientheap.Patient, 0)
@@ -159,17 +159,16 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 		}
 	}()
 
+	wg2 := sync.WaitGroup{}
 	wg2.Add(1)
 	go func() {
 		defer wg2.Done()
-
 		for pat := range sortedPatients {
 			errors <- c.cmdAction(pat)
 		}
 	}()
 
 	wg.Wait()
-
 	close(patients)
 
 	wg2.Wait()
