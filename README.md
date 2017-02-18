@@ -96,3 +96,16 @@ changes --orthanc <url> [--all] [--poll] [command...]:
   -poll-interval int
     	poll interval in seconds (default 60)
 ```
+
+Change JSON has the following format:
+
+```json
+{
+  "ChangeType": "StablePatient",
+  "Date": "20170116T220930",
+  "ID": "f2616d78-b63abb04-dec6bd51-3150e9a8-aee52ad4",
+  "Path": "/patients/f2616d78-b63abb04-dec6bd51-3150e9a8-aee52ad4",
+  "ResourceType": "Patient",
+  "Seq": 2061
+}
+```
