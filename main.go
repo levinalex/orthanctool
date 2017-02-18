@@ -45,3 +45,18 @@ func fail(e error) subcommands.ExitStatus {
 	fmt.Fprintf(os.Stderr, "%s\n", e.Error())
 	return subcommands.ExitFailure
 }
+
+func readFirstError(errors <-chan error, onError func()) <-chan error {
+	returnError := make(chan error, 0)
+	go func() {
+		var firstError error
+		for e := range errors {
+			if e != nil && firstError == nil {
+				firstError = e
+				onError()
+			}
+		}
+		returnError <- firstError
+	}()
+	return returnError
+}
