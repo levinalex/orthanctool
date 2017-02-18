@@ -54,7 +54,7 @@ func (a *Api) do(ctx context.Context, req *http.Request, result interface{}) (*h
 func New(baseURL string) (*Api, error) {
 	u, err := url.Parse(baseURL)
 	return &Api{BaseURL: u, client: &http.Client{
-		Timeout: 600 * time.Second,
+		Timeout: 60 * time.Second,
 		Transport: &http.Transport{
 			DisableKeepAlives: true,
 		},
