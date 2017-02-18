@@ -15,6 +15,7 @@ import (
 
 func main() {
 	subcommands.Register(CloneCommand(), "")
+	subcommands.Register(ChangesCommand(), "")
 	subcommands.Register(RecentPatientsCommand(), "")
 	subcommands.Register(subcommands.HelpCommand(), "help")
 	subcommands.Register(subcommands.FlagsCommand(), "help")
