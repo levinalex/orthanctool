@@ -51,7 +51,9 @@ func (c *changesCommand) run(ctx context.Context) error {
 	}
 
 	onChange := func(cng api.ChangeResult) {
-		cmdAction(c.cmdArgs, cng)
+		if c.filter == "" || c.filter == cng.ChangeType {
+			cmdAction(c.cmdArgs, cng)
+		}
 	}
 
 	if c.pollFutureChanges {
