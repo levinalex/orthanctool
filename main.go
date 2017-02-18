@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/google/subcommands"
 	"github.com/levinalex/orthanctool/api"
@@ -59,4 +62,24 @@ func readFirstError(errors <-chan error, onError func()) <-chan error {
 		returnError <- firstError
 	}()
 	return returnError
+}
+
+func cmdAction(cmd []string, data interface{}) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	if len(cmd) == 0 {
+		fmt.Println(string(b))
+	} else {
+		cmd := exec.Command(cmd[0], cmd[1:]...)
+		cmd.Stdin = bytes.NewBuffer(b)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

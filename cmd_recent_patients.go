@@ -1,13 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"os/exec"
 	"sync"
 	"time"
 
@@ -96,28 +92,6 @@ func watchForChanges(ctx context.Context, startIndex, stopIndex int, source *api
 		})
 }
 
-func (c *recentPatientsCommand) cmdAction(pat patientheap.PatientOutput) error {
-	cmd := c.cmdArgs
-
-	b, err := json.Marshal(pat)
-	if err != nil {
-		return err
-	}
-	if len(cmd) == 0 {
-		fmt.Println(string(b))
-	} else {
-		cmd := exec.Command(cmd[0], cmd[1:]...)
-		cmd.Stdin = bytes.NewBuffer(b)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error {
 	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(ctx)
@@ -164,7 +138,7 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 	go func() {
 		defer wg2.Done()
 		for pat := range sortedPatients {
-			errors <- c.cmdAction(pat)
+			errors <- cmdAction(c.cmdArgs, pat)
 		}
 	}()
 
