@@ -44,8 +44,9 @@ func (c *changesCommand) SetFlags(f *flag.FlagSet) {
 
 func (c *changesCommand) run(ctx context.Context) error {
 	wg := sync.WaitGroup{}
+	ctx, cancel := context.WithCancel(ctx)
 	errors := make(chan error, 0)
-	returnError := readFirstError(errors, func() {})
+	returnError := readFirstError(errors, func() { cancel() })
 
 	_, lastIndex, err := c.orthanc.Api.LastChange(ctx)
 	if err != nil {
@@ -61,7 +62,7 @@ func (c *changesCommand) run(ctx context.Context) error {
 	if c.pollFutureChanges {
 		wg.Add(1)
 		go func() {
-			defer wg.Wait()
+			defer wg.Done()
 
 			pollInterval := time.Duration(c.pollIntervalSeconds) * time.Second
 			errors <- api.ChangeWatch{
@@ -89,6 +90,10 @@ func (c *changesCommand) run(ctx context.Context) error {
 						StartIndex: 0,
 						StopAtEnd:  true,
 					}.Run(ctx, c.orthanc.Api, onChange)
+
+					if ctx.Err() != nil {
+						break
+					}
 				}
 			}
 		}()
