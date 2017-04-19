@@ -42,10 +42,11 @@ func (cw ChangeWatch) Run(ctx context.Context, api *Api, f func(ChangeResult)) e
 			if ctx.Err() != nil {
 				return nil
 			}
+			f(cng)
+
 			if cw.StopIndex > 0 && cng.Seq >= cw.StopIndex {
 				return nil
 			}
-			f(cng)
 		}
 		since = changes.Last
 
