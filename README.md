@@ -12,8 +12,9 @@ $ orthanctool help
 Usage: orthanctool <flags> <subcommand> <subcommand args>
 
 Subcommands:
-        clone            create a complete copy of all instances in an orthanc installation
-        recent-patients  yield patient details for most recently changed patients
+	changes          yield change entries
+	clone            create a complete copy of all instances in an orthanc installation
+	recent-patients  yield patient details for most recently changed patients
 ```
 
 ### Clone
