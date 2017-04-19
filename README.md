@@ -80,7 +80,7 @@ patients as soon as they are stable.
 
 ```
 $ ./orthanctool help changes
-changes --orthanc <url> [--all] [--poll] [command...]:
+changes --orthanc <url> [--all] [--poll] [--sweep=<seconds>] [command...]:
 	Iterates over changes in Orthanc.
 	Outputs each change as JSON.
 	If command is given, it will be run for each change and JSON will be passed to it via stdin.
@@ -95,6 +95,8 @@ changes --orthanc <url> [--all] [--poll] [command...]:
     	continuously poll for changes (default true)
   -poll-interval int
     	poll interval in seconds (default 60)
+  -sweep int
+    	yield all existing instances every N seconds. 0 to disable (default). Implies -all
 ```
 
 Change JSON has the following format:

@@ -17,6 +17,7 @@ type changesCommand struct {
 	allChanges          bool
 	filter              string
 	pollIntervalSeconds int
+	sweepSeconds        int
 }
 
 func ChangesCommand() *changesCommand {
@@ -25,7 +26,7 @@ func ChangesCommand() *changesCommand {
 
 func (c changesCommand) Name() string { return "changes" }
 func (c changesCommand) Usage() string {
-	return c.Name() + ` --orthanc <url> [--all] [--poll] [command...]:
+	return c.Name() + ` --orthanc <url> [--all] [--poll] [--sweep=<seconds>] [command...]:
 	Iterates over changes in Orthanc.
 	Outputs each change as JSON. 
 	If command is given, it will be run for each change and JSON will be passed to it via stdin.` + "\n\n"
@@ -38,6 +39,7 @@ func (c *changesCommand) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&c.pollFutureChanges, "poll", true, "continuously poll for changes")
 	f.BoolVar(&c.allChanges, "all", true, "yield past changes")
 	f.StringVar(&c.filter, "filter", "", "only output changes of this type")
+	f.IntVar(&c.sweepSeconds, "sweep", 0, "yield all existing instances every N seconds. 0 to disable (default). Implies -all")
 }
 
 func (c *changesCommand) run(ctx context.Context) error {
@@ -69,7 +71,7 @@ func (c *changesCommand) run(ctx context.Context) error {
 		}()
 	}
 
-	if c.allChanges {
+	if c.allChanges || c.sweepSeconds > 0 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -79,6 +81,16 @@ func (c *changesCommand) run(ctx context.Context) error {
 				StopIndex:  lastIndex,
 			}.Run(ctx, c.orthanc.Api, onChange)
 
+			if c.sweepSeconds > 0 {
+				for {
+					time.Sleep(time.Duration(c.sweepSeconds) * time.Second)
+
+					errors <- api.ChangeWatch{
+						StartIndex: 0,
+						StopAtEnd:  true,
+					}.Run(ctx, c.orthanc.Api, onChange)
+				}
+			}
 		}()
 	}
 
