@@ -57,7 +57,7 @@ func (cw ChangeWatch) Run(ctx context.Context, api *Api, f func(ChangeResult)) e
 			select {
 			case <-ctx.Done():
 				return nil
-			case <-time.After(DefaultPollInterval):
+			case <-time.After(sleepTime):
 				continue
 			}
 		}
