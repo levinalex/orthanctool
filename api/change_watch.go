@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-type Logger interface {
-	Printf(format string, v ...interface{})
-}
-
 type ChangeWatch struct {
 	StartIndex   int
 	StopIndex    int

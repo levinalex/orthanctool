@@ -12,9 +12,14 @@ import (
 	"github.com/levinalex/go-urlutil"
 )
 
+type Logger interface {
+	Printf(format string, v ...interface{})
+}
+
 type Api struct {
 	BaseURL *url.URL
 	client  *http.Client
+	Logger  Logger
 }
 
 func (a *Api) url(tpl string, vars map[string]string) string {
@@ -31,6 +36,9 @@ func (a *Api) get(ctx context.Context, pathTpl string, vars map[string]string, r
 }
 
 func (a *Api) do(ctx context.Context, req *http.Request, result interface{}) (*http.Response, error) {
+	if a.Logger != nil {
+		a.Logger.Printf("%s %s\n", req.Method, req.URL)
+	}
 	req = req.WithContext(ctx)
 	resp, err := a.client.Do(req)
 
