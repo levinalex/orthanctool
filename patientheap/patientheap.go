@@ -52,21 +52,19 @@ func SortPatients(done <-chan struct{}, patients <-chan Patient) <-chan PatientO
 				heap.Remove(&h, 0)
 				if len(h) == 0 {
 					output = nil
-					if patients == nil {
-						return
-					}
 				}
 			case patient, ok := <-patients:
 				if !ok {
 					patients = nil
-					if output == nil {
-						return
-					}
 				} else {
 					heap.Push(&h, patient)
 					output = sorted
 				}
 			case <-done:
+				return
+			}
+
+			if patients == nil && output == nil {
 				return
 			}
 		}
