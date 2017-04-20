@@ -31,7 +31,7 @@ func (p *patientHeap) Pop() (x interface{}) {
 }
 
 func (p patientHeap) firstWithLength() (result PatientOutput) {
-	if l := len(p); l > 0 {
+	if l := p.Len(); l > 0 {
 		result = PatientOutput{p[0], l - 1}
 	}
 	return
@@ -62,7 +62,7 @@ func SortPatients(done <-chan struct{}, patients <-chan Patient, doFilter bool) 
 			select {
 			case output <- h.firstWithLength():
 				heap.Remove(&h, 0)
-				if len(h) == 0 {
+				if h.Len() == 0 {
 					output = nil
 				}
 			case patient, ok := <-patients:
