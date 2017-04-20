@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/subcommands"
 	"github.com/levinalex/orthanctool/api"
+	"github.com/levinalex/orthanctool/stringset"
 )
 
 const defaultInstancePageSize = 1000
@@ -64,11 +65,6 @@ func copyInstance(ctx context.Context, source, dest *api.Api, id string) (res ap
 	return res, nil
 }
 
-type StringSet struct {
-	m       *sync.Mutex
-	strings map[string]struct{}
-}
-
 func processExistingInstances(ctx context.Context, source *api.Api, instances chan<- string) error {
 	index := 0
 	for {
@@ -92,7 +88,7 @@ func processExistingInstances(ctx context.Context, source *api.Api, instances ch
 	return nil
 }
 
-func loadExistingInstanceIDs(ctx context.Context, dest *api.Api, existingInstances *StringSet) error {
+func loadExistingInstanceIDs(ctx context.Context, dest *api.Api, existingInstances *stringset.Set) error {
 	index := 0
 	for {
 		if ctx.Err() != nil {
@@ -132,7 +128,7 @@ func processFutureChanges(ctx context.Context, source *api.Api, instances chan<-
 	return err
 }
 
-func copyInstances(ctx context.Context, source, dest *api.Api, instances <-chan string, existingInstances *StringSet) error {
+func copyInstances(ctx context.Context, source, dest *api.Api, instances <-chan string, existingInstances *stringset.Set) error {
 	for {
 		select {
 		case id := <-instances:
@@ -157,7 +153,7 @@ func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 	numUploaders := 3
 	ctx, cancel := context.WithCancel(ctx)
 	errors := make(chan error, 0)
-	existing := NewStringSet()
+	existing := stringset.New()
 	instancesToCopy := make(chan string, 0)
 	wg := sync.WaitGroup{}
 
