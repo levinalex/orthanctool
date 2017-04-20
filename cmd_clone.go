@@ -65,46 +65,18 @@ func copyInstance(ctx context.Context, source, dest *api.Api, id string) (res ap
 	return res, nil
 }
 
-func processExistingInstances(ctx context.Context, source *api.Api, instances chan<- string) error {
+func existingInstances(ctx context.Context, orthanc *api.Api, instanceFunc func([]string) error) error {
 	index := 0
 	for {
-		fmt.Fprintf(os.Stderr, "load source instances (%d)\n", index)
-		ids, err := source.Instances(ctx, index, defaultInstancePageSize)
+		ids, err := orthanc.Instances(ctx, index, defaultInstancePageSize)
 		if err != nil {
 			return err
 		}
 		if len(ids) == 0 {
 			break
 		}
-		for _, id := range ids {
-			select {
-			case instances <- id:
-			case <-ctx.Done():
-				return nil
-			}
-		}
+		instanceFunc(ids)
 		index += len(ids)
-	}
-	return nil
-}
-
-func loadExistingInstanceIDs(ctx context.Context, dest *api.Api, existingInstances *stringset.Set) error {
-	index := 0
-	for {
-		if ctx.Err() != nil {
-			return nil
-		}
-		fmt.Fprintf(os.Stderr, "load destination instances (%d)\n", index)
-		in, err := dest.Instances(ctx, index, defaultInstancePageSize)
-		if err != nil {
-			return err
-		}
-		if len(in) == 0 {
-			break
-		}
-		index += len(in)
-
-		existingInstances.Add(in)
 	}
 	return nil
 }
@@ -151,9 +123,14 @@ type ErrorFunc func(err error)
 
 func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 	numUploaders := 3
+	pollInterval := time.Duration(c.pollIntervalSeconds) * time.Second
+
 	ctx, cancel := context.WithCancel(ctx)
 	errors := make(chan error, 0)
-	existing := stringset.New()
+	returnError := readFirstError(errors, func() { cancel() })
+
+	instancesAtDestination := stringset.New()
+
 	instancesToCopy := make(chan string, 0)
 	wg := sync.WaitGroup{}
 
@@ -161,25 +138,49 @@ func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 	for i := 0; i < numUploaders; i++ {
 		go func() {
 			defer wg.Done()
-			errors <- copyInstances(ctx, source, dest, instancesToCopy, &existing)
+			errors <- copyInstances(ctx, source, dest, instancesToCopy, &instancesAtDestination)
 		}()
 	}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		pollInterval := time.Duration(c.pollIntervalSeconds) * time.Second
 		errors <- processFutureChanges(ctx, source, instancesToCopy, pollInterval)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errors <- loadExistingInstanceIDs(ctx, dest, &existing)
-		errors <- processExistingInstances(ctx, source, instancesToCopy)
-	}()
 
-	returnError := readFirstError(errors, func() { cancel() })
+		wgSource := sync.WaitGroup{}
+		instancesAtSource := stringset.New()
+
+		wgSource.Add(1)
+		go func() {
+			defer wgSource.Done()
+
+			errors <- existingInstances(ctx, source, func(ids []string) error {
+				instancesAtSource.Add(ids)
+				return nil
+			})
+
+		}()
+
+		errors <- existingInstances(ctx, dest, func(ids []string) error {
+			instancesAtDestination.Add(ids)
+			return nil
+		})
+
+		wgSource.Wait()
+		for _, id := range instancesAtSource.List() {
+			select {
+			case instancesToCopy <- id:
+			case <-ctx.Done():
+				errors <- ctx.Err()
+				break
+			}
+		}
+	}()
 
 	wg.Wait()
 	close(errors)

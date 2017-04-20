@@ -27,3 +27,16 @@ func (s *Set) HasKey(item string) bool {
 	_, ok := s.strings[item]
 	return ok
 }
+
+func (s *Set) List() []string {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	res := make([]string, len(s.strings))
+	i := 0
+	for k, _ := range s.strings {
+		res[i] = k
+		i++
+	}
+	return res
+}
