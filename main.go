@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 
@@ -35,6 +36,7 @@ func (a *apiFlag) Set(s string) error {
 	if err == nil {
 		a.Api = ap
 	}
+	ap.Logger = log.New(os.Stderr, "", 0)
 	return err
 }
 func (a apiFlag) String() string {
