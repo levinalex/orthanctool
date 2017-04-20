@@ -39,10 +39,22 @@ func (p patientHeap) firstWithLength() (result PatientOutput) {
 
 // SortPatients takes a channel of Patients with an update timestamp and appeends them to a channel most recently changed patients first.
 //
-func SortPatients(done <-chan struct{}, patients <-chan Patient) <-chan PatientOutput {
+func SortPatients(done <-chan struct{}, patients <-chan Patient, doFilter bool) <-chan PatientOutput {
 	var sorted = make(chan PatientOutput, 0)
 	var h = make(patientHeap, 0)
 	var output chan<- PatientOutput = nil // output channel is nil while heap is empty
+	var filterFunc = func(p Patient) bool { return true }
+
+	if doFilter {
+		var filter = map[string]string{}
+		filterFunc = func(p Patient) bool {
+			if filter[p.ID] < p.LastUpdate {
+				filter[p.ID] = p.LastUpdate
+				return true
+			}
+			return false
+		}
+	}
 
 	go func() {
 		defer close(sorted)
@@ -57,8 +69,10 @@ func SortPatients(done <-chan struct{}, patients <-chan Patient) <-chan PatientO
 				if !ok {
 					patients = nil
 				} else {
-					heap.Push(&h, patient)
-					output = sorted
+					if filterFunc(patient) {
+						heap.Push(&h, patient)
+						output = sorted
+					}
 				}
 			case <-done:
 				return

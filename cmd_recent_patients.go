@@ -96,7 +96,7 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 	ctx, cancel := context.WithCancel(ctx)
 	errors := make(chan error, 0)
 	patients := make(chan patientheap.Patient, 0)
-	sortedPatients := patientheap.SortPatients(ctx.Done(), patients)
+	sortedPatients := patientheap.SortPatients(ctx.Done(), patients, true)
 	returnError := readFirstError(errors, func() { cancel() })
 
 	wg.Add(1)
