@@ -18,7 +18,7 @@ func (a *Api) PatientDetailsSince(ctx context.Context, since, limit int) (result
 	err = a.get(ctx, "patients{?since,limit,expand}", map[string]string{
 		"since":  strconv.Itoa(since),
 		"limit":  strconv.Itoa(limit),
-		"expand": "",
+		"expand": "1",
 	}, &result)
 	return result, err
 }
