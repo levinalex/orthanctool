@@ -18,7 +18,6 @@ const reverseChangeIteratorChunkSize = 1000
 type recentPatientsCommand struct {
 	cmdArgs             []string
 	orthanc             apiFlag
-	pollFutureChanges   bool
 	pollIntervalSeconds int
 }
 
@@ -39,8 +38,7 @@ func (c *recentPatientsCommand) Synopsis() string {
 
 func (c *recentPatientsCommand) SetFlags(f *flag.FlagSet) {
 	f.Var(&c.orthanc, "orthanc", "Orthanc URL")
-	f.IntVar(&c.pollIntervalSeconds, "poll-interval", 60, "poll interval in seconds")
-	f.BoolVar(&c.pollFutureChanges, "poll", true, "continuously poll for changes")
+	f.IntVar(&c.pollIntervalSeconds, "poll", 60, "poll interval in seconds. Set to 0 to disable polling)")
 }
 
 func (c *recentPatientsCommand) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -82,7 +80,8 @@ func patientDetails(ctx context.Context, source *api.Api, patients chan<- patien
 }
 func watchForChanges(ctx context.Context, startIndex, stopIndex int, source *api.Api, patients chan<- patientheap.Patient, pollInterval time.Duration) error {
 	return api.ChangeWatch{
-		StartIndex: startIndex, StopIndex: stopIndex,
+		StartIndex:   startIndex,
+		StopIndex:    stopIndex,
 		PollInterval: pollInterval,
 	}.
 		Run(ctx, source, func(cng api.ChangeResult) {
@@ -103,12 +102,6 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errors <- patientDetails(ctx, source, patients)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
 
 		_, lastIndex, err := source.LastChange(ctx)
 		if err != nil {
@@ -116,7 +109,7 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 			return
 		}
 
-		if c.pollFutureChanges {
+		if c.pollIntervalSeconds > 0 {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -131,6 +124,12 @@ func (c *recentPatientsCommand) run(ctx context.Context, source *api.Api) error 
 			errors <- watchForChanges(ctx, from, to, source, patients, 0) // all past changes up to now
 			to = from
 		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errors <- patientDetails(ctx, source, patients)
+		}()
 	}()
 
 	wg2 := sync.WaitGroup{}

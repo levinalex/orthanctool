@@ -33,7 +33,7 @@ func (c *cloneCommand) Synopsis() string {
 func (c *cloneCommand) SetFlags(f *flag.FlagSet) {
 	f.Var(&c.source, "orthanc", "source Orthanc URL")
 	f.Var(&c.dest, "dest", "destination Orthanc URL")
-	f.IntVar(&c.pollIntervalSeconds, "poll-interval", 60, "poll interval in seconds")
+	f.IntVar(&c.pollIntervalSeconds, "poll", 60, "poll interval in seconds")
 }
 
 func (c *cloneCommand) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
@@ -172,8 +172,8 @@ func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		timeout := time.Duration(c.pollIntervalSeconds) * time.Second
-		errors <- processFutureChanges(ctx, source, instancesToCopy, timeout)
+		pollInterval := time.Duration(c.pollIntervalSeconds) * time.Second
+		errors <- processFutureChanges(ctx, source, instancesToCopy, pollInterval)
 	}()
 
 	wg.Add(1)

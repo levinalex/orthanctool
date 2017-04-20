@@ -50,10 +50,8 @@ recent-patients --orthanc <url> [command...]:
 
   -orthanc value
     	Orthanc URL
-  -poll
-    	continuously poll for changes (default true)
-  -poll-interval int
-    	poll interval in seconds (default 60)
+  -poll int
+    	poll interval in seconds. Set to 0 to disable polling) (default 60)
 ```
 
 Patient JSON has the following format:
@@ -92,10 +90,8 @@ changes --orthanc <url> [--all] [--poll] [--sweep=<seconds>] [command...]:
     	only output changes of this type
   -orthanc value
     	Orthanc URL
-  -poll
-    	continuously poll for changes (default true)
-  -poll-interval int
-    	poll interval in seconds (default 60)
+  -poll int
+    	poll interval in seconds. Set to 0 to disable polling) (default 60)
   -sweep int
     	yield all existing instances every N seconds. 0 to disable (default). Implies -all
 ```

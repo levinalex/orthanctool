@@ -13,7 +13,6 @@ import (
 type changesCommand struct {
 	cmdArgs             []string
 	orthanc             apiFlag
-	pollFutureChanges   bool
 	allChanges          bool
 	filter              string
 	pollIntervalSeconds int
@@ -35,8 +34,7 @@ func (c changesCommand) Synopsis() string { return "yield change entries" }
 
 func (c *changesCommand) SetFlags(f *flag.FlagSet) {
 	f.Var(&c.orthanc, "orthanc", "Orthanc URL")
-	f.IntVar(&c.pollIntervalSeconds, "poll-interval", 60, "poll interval in seconds")
-	f.BoolVar(&c.pollFutureChanges, "poll", true, "continuously poll for changes")
+	f.IntVar(&c.pollIntervalSeconds, "poll", 60, "poll interval in seconds. Set to 0 to disable polling)")
 	f.BoolVar(&c.allChanges, "all", true, "yield past changes")
 	f.StringVar(&c.filter, "filter", "", "only output changes of this type")
 	f.IntVar(&c.sweepSeconds, "sweep", 0, "yield all existing instances every N seconds. 0 to disable (default). Implies -all")
@@ -59,7 +57,7 @@ func (c *changesCommand) run(ctx context.Context) error {
 		}
 	}
 
-	if c.pollFutureChanges {
+	if c.pollIntervalSeconds > 0 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
