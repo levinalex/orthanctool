@@ -75,7 +75,10 @@ func existingInstances(ctx context.Context, orthanc *api.Api, instanceFunc func(
 		if len(ids) == 0 {
 			break
 		}
-		instanceFunc(ids)
+		err = instanceFunc(ids)
+		if err != nil {
+			return err
+		}
 		index += len(ids)
 	}
 	return nil
@@ -152,27 +155,20 @@ func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 	go func() {
 		defer wg.Done()
 
-		wgSource := sync.WaitGroup{}
 		instancesAtSource := stringset.New()
 
-		wgSource.Add(1)
+		wg.Add(1)
 		go func() {
-			defer wgSource.Done()
+			defer wg.Done()
+			defer instancesAtSource.Reset()
 
-			errors <- existingInstances(ctx, source, func(ids []string) error {
-				instancesAtSource.Add(ids)
-				return nil
-			})
+			errors <- existingInstances(ctx, source, instancesAtSource.Add)
 
 		}()
 
-		errors <- existingInstances(ctx, dest, func(ids []string) error {
-			instancesAtDestination.Add(ids)
-			return nil
-		})
+		errors <- existingInstances(ctx, dest, instancesAtDestination.Add)
 
-		wgSource.Wait()
-		for _, id := range instancesAtSource.List() {
+		for id := range instancesAtSource.Drain(ctx) {
 			select {
 			case instancesToCopy <- id:
 			case <-ctx.Done():
@@ -184,6 +180,5 @@ func (c *cloneCommand) run(ctx context.Context, source, dest *api.Api) error {
 
 	wg.Wait()
 	close(errors)
-
 	return <-returnError
 }
